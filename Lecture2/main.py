@@ -1,7 +1,10 @@
 import os
 import cv2
 import numpy as np
+import matplotlib
+matplotlib.use("TkAgg")  # or "Agg" if running headless
 import matplotlib.pyplot as plt
+
 
 input_folder = "test-images"
 output_folder = "test-output"
@@ -58,7 +61,7 @@ for image_name in os.listdir(input_folder):
         axes[1].axis('off')
 
         plt.tight_layout()
-        plt.show()
+        #plt.show()
 
         # Print accuracy after processing all images
         if total_images == 130:
