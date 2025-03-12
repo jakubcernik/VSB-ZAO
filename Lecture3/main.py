@@ -1,43 +1,24 @@
-import cv2
-import numpy as np
-import pyautogui
+import cv2, pyautogui, time, numpy as np
 
-# Load the dart template
-dart_template = cv2.imread('target.png', 0)  # Grayscale template
+template = cv2.imread('template.png', 0)
+if template is None:
+    raise FileNotFoundError("File not found!")
 
-# Capture a screenshot of the game window
-screenshot = pyautogui.screenshot()
-screenshot = np.array(screenshot)
-# Convert to grayscale
-screenshot_gray = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY)
+template_h, template_w = template.shape
+screen_w, screen_h = pyautogui.size()
 
-# Apply edge detection
-screenshot_gray = cv2.Canny(screenshot_gray, 50, 200)
-dart_template = cv2.Canny(dart_template, 50, 200)
-
-# Now apply template matching
-result = cv2.matchTemplate(screenshot_gray, dart_template, cv2.TM_CCOEFF_NORMED)
-
-min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
-
-# Define threshold for detection
-threshold = 0.2 # Adjust based on accuracy
-if max_val >= threshold:
-    dart_position = max_loc
-    print(f"Dart Found at: {dart_position}")
-
-    # Move mouse to the dart position and throw
-    dart_x, dart_y = dart_position
-    pyautogui.moveTo(dart_x, dart_y, duration=0.2)
-    pyautogui.click()
+def move_and_click(x, y):
+    pyautogui.moveTo(x, y)
     pyautogui.click()
 
-else:
-    print("Dart not found!")
+while True:
+    screenshot = np.array(pyautogui.screenshot().convert('L'))
+    result = cv2.matchTemplate(screenshot, template, cv2.TM_CCOEFF_NORMED)
+    _, max_val, _, max_loc = cv2.minMaxLoc(result)
 
-# Show detection result
-h, w = dart_template.shape
-cv2.rectangle(screenshot, dart_position, (dart_position[0] + w, dart_position[1] + h), (0, 255, 0), 2)
-cv2.imshow('Detected Dart', screenshot)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+    if max_val > 0.5:
+        center_x, center_y = max_loc[0] + template_w // 2, max_loc[1] + template_h // 2
+        scale_x, scale_y = screen_w / screenshot.shape[1], screen_h / screenshot.shape[0]
+        target_x, target_y = int(center_x * scale_x), int(center_y * scale_y)
+        move_and_click(target_x, target_y)
+        time.sleep(0.3)
