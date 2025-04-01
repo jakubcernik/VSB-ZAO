@@ -14,30 +14,20 @@ def initialize_cascades():
     return {
         "face_frontal": cv2.CascadeClassifier('haarcascades/haarcascade_frontalface_default.xml'),
         "face_profile": cv2.CascadeClassifier('haarcascades/haarcascade_profileface.xml'),
-        "eye": cv2.CascadeClassifier('eye_cascade_fusek.xml'),
-        "mouth": cv2.CascadeClassifier('haarcascades/haarcascade_smile.xml')
+        "eye": cv2.CascadeClassifier('eye_cascade_fusek.xml')
     }
 
 def detect_faces(cascade, gray_frame, weight_threshold=2.0):
-    """Detekuje obličeje v zadaném šedotónovém snímku."""
-    try:
-        faces, _, weights = cascade.detectMultiScale3(
-            gray_frame, scaleFactor=1.1, minNeighbors=10, minSize=(150, 150), maxSize=(500, 500),
+    faces, _, weights = cascade.detectMultiScale3(
+            gray_frame, scaleFactor=1.1, minNeighbors=3, minSize=(200, 200), maxSize=(500, 500),
             outputRejectLevels=True)
-        return [face for face, weight in zip(faces, weights) if weight > weight_threshold]
-    except:
-        return cascade.detectMultiScale(gray_frame, scaleFactor=1.1, minNeighbors=3, minSize=(100, 100),
-                                        maxSize=(500, 500))
+    return [face for face, weight in zip(faces, weights) if weight > weight_threshold]
 
 def is_eye_open(eye_region_gray, intensity_threshold=80):
-    """
-    Zjistí, zda je oko otevřené, na základě průměrné hodnoty pixelů v šedotónové ROI.
-    eye_region_gray: šedotónový výřez oka (ROI)
-    intensity_threshold: prahová hodnota, pod kterou se oko považuje za zavřené
-    """
-    # Vypočítej průměrnou intenzitu pixelů
+    # Avg pixel intensity
     avg_intensity = eye_region_gray.mean()
-    # Pokud je průměrná intenzita větší, předpokládáme "open"
+
+    # Presuming "open"
     return avg_intensity > intensity_threshold
 
 def process_frame(frame, cascades, eye_states, frame_index, correct_predictions, total_predictions):
@@ -50,19 +40,18 @@ def process_frame(frame, cascades, eye_states, frame_index, correct_predictions,
         roi_gray = gray[y:y + h, x:x + w]
 
         # Eye detection
-        eyes = cascades["eye"].detectMultiScale(roi_gray, scaleFactor=1.05, minNeighbors=3, minSize=(15, 15))
+        eyes = cascades["eye"].detectMultiScale(roi_gray, scaleFactor=1.05, minNeighbors=3, minSize=(20, 20), maxSize=(60, 60))
         for (ex, ey, ew, eh) in eyes:
             eye_roi_gray = roi_gray[ey:ey + eh, ex:ex + ew]
 
-        # Zavoláte vlastní funkci pro zjištění, zda je oko otevřené
-        if is_eye_open(eye_roi_gray):
-            predicted_eye_state = "open"
-            break
+            cv2.rectangle(frame,
+                          (x + ex, y + ey), (x + ex + ew, y + ey + eh),
+                          (0, 255, 0), 2)
 
-        # Mouth detection (not mandatory)
-        cascades["mouth"].detectMultiScale(roi_gray, scaleFactor=1.7, minNeighbors=20, minSize=(30, 30))
+            if is_eye_open(eye_roi_gray):
+                predicted_eye_state = "open"
+                break
 
-    # Zaznamenáme správnost předpovědi
     if frame_index < len(eye_states):
         if predicted_eye_state == eye_states[frame_index]:
             correct_predictions += 1
@@ -95,7 +84,7 @@ def main():
                     (0, 0, 255), 2)
         cv2.imshow("Face/Eye Detection", frame)
 
-        if cv2.waitKey(1) & 0xFF == 27:  # Esc pro ukončení
+        if cv2.waitKey(1) & 0xFF == 27:
             break
 
         frame_index += 1
@@ -107,7 +96,7 @@ def main():
         accuracy = (correct_predictions / total_predictions) * 100
         print(f"Overall eye state recognition accuracy: {accuracy:.2f}%")
     else:
-        print("eye-state.txt missing or empty!")
+        print("eye-state.txt missing!")
 
 
 if __name__ == "__main__":
