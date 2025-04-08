@@ -64,9 +64,11 @@ for i in range(1, 25):
 
     # Vyhodnocení přesnosti
     with open(f'test_texts_zao/test{i}.txt', 'r') as f_true:
-        ground_truth = [int(line.strip()) for line in f_true.readlines()]
+        ground_truth = []
+        for line in f_true.readlines():
+            ground_truth.append(int(line.strip()))
 
-    correct_slots = sum(p == gt for p, gt in zip(predictions, ground_truth))
+    correct_slots = np.sum(np.array(predictions) == np.array(ground_truth))
     correct_prediction += correct_slots
     total_predictions += len(predictions)
     print(f'Obrázek {i}: přesnost {correct_slots / len(predictions) * 100:.2f}%')
