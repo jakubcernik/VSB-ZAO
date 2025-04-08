@@ -43,16 +43,39 @@ for i in range(1, 25):
 
     predictions = []
     for slot in slots_data:
-        points = np.array(slot['points'], dtype='float32')
-        dst = np.array([[0, 0], [slot_width - 1, 0], [slot_width - 1, slot_height - 1], [0, slot_height - 1]],
-                       dtype='float32')
-        warped = cv2.warpPerspective(image, cv2.getPerspectiveTransform(points, dst), (slot_width, slot_height))
-        predictions.append(clf.predict([extract_lbp_features(warped)])[0])
+        # Získáme body parkovacího místa jako pole
+        body_mista = np.array(slot['points'], dtype='float32')
+
+        # Definujeme cílové body obdélníkového tvaru
+        cilove_body = np.array([
+            [0, 0],                         # levý horní
+            [slot_width - 1, 0],            # pravý horní
+            [slot_width - 1, slot_height - 1], # pravý dolní
+            [0, slot_height - 1]            # levý dolní
+        ], dtype='float32')
+
+        # Transformujeme místo do standardní velikosti
+        transformace = cv2.getPerspectiveTransform(body_mista, cilove_body)
+        normalizovane_misto = cv2.warpPerspective(image, transformace, (slot_width, slot_height))
+
+        # Extrahujeme příznaky a predikujeme stav (0=volno, 1=obsazeno)
+        priznaky = extract_lbp_features(normalizovane_misto)
+        predikce = clf.predict([priznaky])[0]
+        predictions.append(predikce)
 
     # Vykreslení predikce
     for slot_idx, slot in enumerate(slots_data):
-        cv2.polylines(image, [np.array(slot['points'], dtype='int32')], True,
-                      (0, 255, 0) if predictions[slot_idx] == 0 else (0, 0, 255), 2)
+        # Převést body slotu na čísla typu int32
+        body_slotu = np.array(slot['points'], dtype='int32')
+
+        # Určit barvu podle predikce (zelená = volno, červená = obsazeno)
+        if predictions[slot_idx] == 0:
+            barva = (0, 255, 0)  # zelená = volno
+        else:
+            barva = (0, 0, 255)  # červená = obsazeno
+
+        # Vykreslit polygon kolem parkovacího místa
+        cv2.polylines(image, [body_slotu], True, barva, 2)
 
     cv2.imshow("Vyhodnocene parkoviste", image)
     cv2.waitKey(1000)
