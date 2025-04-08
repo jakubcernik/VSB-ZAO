@@ -54,7 +54,6 @@ def click_event(event, x, y, flags, param):
 cv2.imshow("Klikni 4 body (rohy)", clone)
 cv2.setMouseCallback("Klikni 4 body (rohy)", click_event)
 
-print("Klikni 4 rohy každého místa. Okno nezavírej, dokud neoznačíš všechna místa.")
 print("Stiskni ESC pro ukončení.")
 
 while True:
