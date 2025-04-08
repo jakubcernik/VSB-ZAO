@@ -2,13 +2,16 @@ import cv2
 import json
 import numpy as np
 import os
+import time
 from skimage.feature import local_binary_pattern
 from sklearn.svm import SVC
 
-radius = 1
-n_points = 8 * radius
+radius = 1; n_points = 8 * radius
+#radius = 2; n_points = 16 * radius
+#radius = 3; n_points = 24 * radius
 correct_prediction = 0
 total_predictions = 0
+total_start_time = time.time()
 
 def extract_lbp_features(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -78,7 +81,7 @@ for i in range(1, 25):
         cv2.polylines(image, [body_slotu], True, barva, 2)
 
     cv2.imshow("Vyhodnocene parkoviste", image)
-    cv2.waitKey(1000)
+    cv2.waitKey(500)
     cv2.destroyAllWindows()
 
     # Saving results
@@ -99,5 +102,7 @@ for i in range(1, 25):
     total_predictions += len(predictions)
     print(f'Obrázek {i}: přesnost {correct_slots / len(predictions) * 100:.2f}%')
 
-celkova_presnost = correct_prediction / total_predictions * 100
-print(f'Celková přesnost: {celkova_presnost:.2f}%')
+    celkova_presnost = correct_prediction / total_predictions * 100
+    total_end_time = time.time()
+    print(f'Celková přesnost: {celkova_presnost:.2f}%')
+print(f'Celkový čas zpracování: {total_end_time - total_start_time:.2f} sekund')
