@@ -54,13 +54,17 @@ for i in range(1, 25):
         cv2.polylines(image, [np.array(slot['points'], dtype='int32')], True,
                       (0, 255, 0) if predictions[slot_idx] == 0 else (0, 0, 255), 2)
 
-    cv2.imshow("Vyhodnocené parkoviště", image)
+    cv2.imshow("Vyhodnocene parkoviste", image)
     cv2.waitKey(1000)
     cv2.destroyAllWindows()
 
     # Uložení výsledků
-    with open(f'test_results_zao/result_{i}.txt', 'w') as f_out:
-        f_out.write('\n'.join(map(str, predictions)))
+    # Otevření souboru pro zápis výsledků
+    output_file = open(f'test_results_zao/result_{i}.txt', 'w')
+    # Zápis každé predikce na samostatný řádek
+    for prediction in predictions:
+        output_file.write(str(prediction) + '\n')
+    output_file.close()
 
     # Vyhodnocení přesnosti
     with open(f'test_texts_zao/test{i}.txt', 'r') as f_true:
