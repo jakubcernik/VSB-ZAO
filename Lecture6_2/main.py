@@ -3,7 +3,6 @@ import numpy as np
 import time
 from skimage.feature import local_binary_pattern
 
-
 def load_eye_states(file_path):
     try:
         with open(file_path, 'r') as f:
@@ -12,35 +11,35 @@ def load_eye_states(file_path):
         print(f"Could not load '{file_path}'!", e)
         return []
 
-
 def get_lbp_image(image):
-    # Parametry pro LBP
-    radius = 5
+    radius = 1
     n_points = 8 * radius
+    lbp = local_binary_pattern(image, n_points, radius, method='uniform')
+    return lbp
 
-    # Výpočet LBP pomocí knihovní funkce
-    lbp = local_binary_pattern(image, n_points, radius, method='default')
-
-    # Převod na uint8 pro kompatibilitu s OpenCV
-    lbp_image = np.uint8(lbp)
-
-    return lbp_image
-
-
-def is_eye_open(eye_region_gray, lbp_threshold=None, uniformity_threshold=0.6):
+def is_eye_open(eye_region_gray):
     if eye_region_gray.size == 0:
         return False
 
     lbp_image = get_lbp_image(eye_region_gray)
-    hist, _ = np.histogram(lbp_image.flatten(), bins=256, range=(0, 256))
-    hist = hist.astype(float) / (hist.sum() + 1e-7)
 
-    # Dynamický práh založený na statistikách LBP obrazu
-    if lbp_threshold is None:
-        lbp_threshold = lbp_image.mean() * 0.9  # Dynamický práh
+    # Sober operator for edge detection
+    sobel_x = cv2.Sobel(eye_region_gray, cv2.CV_64F, 1, 0, ksize=3)
+    sobel_y = cv2.Sobel(eye_region_gray, cv2.CV_64F, 0, 1, ksize=3)
+    sobel = np.sqrt(sobel_x**2 + sobel_y**2)
 
-    return (lbp_image.mean() > lbp_threshold and
-            np.sum(np.square(hist)) > uniformity_threshold)
+    mean_value = lbp_image.mean()
+    edge_density = np.sum(sobel > 20) / sobel.size
+
+    # Výpočet poměru bílé plochy (otevřené oko má více jasných pixelů)
+    _, thresholded = cv2.threshold(eye_region_gray, 55, 255, cv2.THRESH_BINARY)
+    white_ratio = np.sum(thresholded > 0) / thresholded.size
+
+    # Komplexnější pravidlo pro detekci otevřeného oka
+    # Více vzorů hran a vyšší světlost znamenají otevřené oko
+    is_open = (mean_value > 20 and edge_density > 0.15) or white_ratio > 0.45
+
+    return is_open
 
 
 def process_frame(frame, cascades, eye_states, frame_idx):
@@ -56,19 +55,25 @@ def process_frame(frame, cascades, eye_states, frame_idx):
         faces.extend([face for face, weight in zip(detected, weights) if weight > 2.0])
 
     # Detekce oka
-    predicted_eye_state = "close"
+    predicted_eye_state = "unknown"
     for (x, y, w, h) in faces:
         roi_gray = gray[y:y + h, x:x + w]
-        eyes = cascades["eye"].detectMultiScale(roi_gray, 1.05, 3,
-                                                minSize=(20, 20), maxSize=(60, 60))
+        eyes = cascades["eye"].detectMultiScale(roi_gray, 1.1, 2,
+                                                minSize=(15, 15), maxSize=(70, 70))
 
         for (ex, ey, ew, eh) in eyes:
             eye_roi = roi_gray[ey:ey + eh, ex:ex + ew]
-            cv2.rectangle(frame, (x + ex, y + ey), (x + ex + ew, y + ey + eh), (0, 255, 0), 2)
+            # Předzpracování oblasti oka
+            eye_roi = cv2.equalizeHist(eye_roi)  # Zlepšení kontrastu
 
-            # Použití dynamického prahu pro klasifikaci
-            if is_eye_open(eye_roi, lbp_threshold=None):
+# Detekce, zda je oko otevřené
+            is_open = is_eye_open(eye_roi)
+            color = (0, 255, 0) if is_open else (0, 0, 255)  # Zelená pro otevřené, červená pro zavřené
+            cv2.rectangle(frame, (x + ex, y + ey), (x + ex + ew, y + ey + eh), color, 2)
+
+            if is_open:
                 predicted_eye_state = "open"
+                break
                 break
 
         if predicted_eye_state == "open":
@@ -80,6 +85,9 @@ def process_frame(frame, cascades, eye_states, frame_idx):
     if frame_idx < len(eye_states):
         total = 1
         ground_truth = eye_states[frame_idx]
+        # Pokud nebyl učiněn odhad, defaultně předpokládáme "close"
+        if predicted_eye_state == "unknown":
+            predicted_eye_state = "close"
         correct = int(predicted_eye_state == ground_truth)
         print(f"Frame {frame_idx}: Predicted={predicted_eye_state}, Truth={ground_truth}, Match={correct==1}")
 
