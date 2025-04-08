@@ -170,3 +170,4 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 *.png
+/Lecture6/test_results_zao/
