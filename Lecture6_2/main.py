@@ -12,8 +12,9 @@ def load_eye_states(file_path):
         return []
 
 def get_lbp_image(image):
-    radius = 1
-    n_points = 8 * radius
+    radius = 1; n_points = 8 * radius
+    # radius = 2; n_points = 16 * radius
+    # radius = 3; n_points = 24 * radius
     lbp = local_binary_pattern(image, n_points, radius, method='uniform')
     return lbp
 
