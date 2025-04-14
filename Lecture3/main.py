@@ -21,4 +21,4 @@ while True:
         scale_x, scale_y = screen_w / screenshot.shape[1], screen_h / screenshot.shape[0]
         target_x, target_y = int(center_x * scale_x), int(center_y * scale_y)
         move_and_click(target_x, target_y)
-        time.sleep(0.3)
+        time.sleep(0.2)

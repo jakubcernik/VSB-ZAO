@@ -7,8 +7,9 @@ from skimage.feature import local_binary_pattern
 from sklearn.svm import SVC
 
 radius = 1; n_points = 8 * radius
-#radius = 2; n_points = 16 * radius
-#radius = 3; n_points = 24 * radius
+#radius = 2; n_points = 8 * radius
+#radius = 3; n_points = 8 * radius
+
 correct_prediction = 0
 total_predictions = 0
 total_start_time = time.time()

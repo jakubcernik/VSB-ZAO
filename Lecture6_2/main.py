@@ -12,8 +12,9 @@ def load_eye_states(file_path):
         return []
 
 def get_lbp_image(image):
-    radius = 1
-    n_points = 8 * radius
+    radius = 1; n_points = 8 * radius
+    # radius = 2; n_points = 8 * radius
+    # radius = 3; n_points = 8 * radius
     lbp = local_binary_pattern(image, n_points, radius, method='uniform')
     return lbp
 
@@ -34,7 +35,7 @@ def is_eye_open(eye_region_gray):
     _, thresholded = cv2.threshold(eye_region_gray, 70, 255, cv2.THRESH_BINARY)
     white_ratio = cv2.countNonZero(thresholded) / thresholded.size
 
-    is_open = (mean_value > 20 and edge_density > 0.15) or white_ratio > 0.35
+    is_open = (mean_value > 20 and edge_density > 0.15) or white_ratio > 0.30
 
     return is_open
 
