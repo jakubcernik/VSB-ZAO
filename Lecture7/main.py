@@ -118,7 +118,7 @@ def main():
     precision = true_positive/(true_positive+false_positive) if true_positive+false_positive>0 else 0
     recall = true_positive/(true_positive+false_negative) if true_positive+false_negative>0 else 0
     f1_score = 2*precision*recall/(precision+recall) if precision+recall>0 else 0
-    print(f'Precision: {precision:.4f}, Recall: {recall:.4f}, F1: {f1_score:.4f}, Time: {time.time()-st:.2f}state')
+    print(f'Precision: {precision:.4f}, Recall: {recall:.4f}, F1: {f1_score:.4f}, Time: {time.time()-st:.2f}s')
 
 if __name__=='__main__':
     main()
